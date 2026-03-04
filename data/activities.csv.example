@@ -1,0 +1,5 @@
+Date,Time,Client,BillTo,Notes,Cost,Completed,Paid,InvoiceNumber
+2026-01-15,14:30,Jean Dupont,Jean Dupont,Consultation and planning,75,TRUE,TRUE,202601-0001
+2026-01-22,10:00,Marie Martin,Marie Martin,Project development - Phase 1,100,TRUE,TRUE,202601-0001
+2026-02-05,09:00,Pierre Bernard,Pierre Bernard,Technical review and feedback,50,TRUE,TRUE,202602-0001
+2026-02-10,15:30,Sophie Dubois,Sophie Dubois,Implementation support,75,TRUE,FALSE,

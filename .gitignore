@@ -1,0 +1,12 @@
+venv
+src/__pycache__
+data/activities.csv
+data/clients.csv
+data/invoices.db.bak
+config/business.yaml
+invoices/**/*.pdf
+invoices/**/*.xml
+invoices/**/*.db
+*.db
+*.sqlite
+.env

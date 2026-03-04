@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+
+<style>
+@page {
+    size: A4;
+    margin: 25mm 20mm 25mm 20mm;
+}
+
+body {
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 12px;
+    color: #222;
+}
+
+h1 {
+    font-size: 28px;
+    margin: 0;
+    text-align: right;
+    letter-spacing: 2px;
+}
+
+.section {
+    margin-top: 25px;
+}
+
+.header-table {
+    width: 100%;
+}
+
+.header-left {
+    width: 60%;
+    vertical-align: top;
+}
+
+.header-right {
+    width: 40%;
+    text-align: right;
+    vertical-align: top;
+}
+
+.meta-table {
+    margin-top: 10px;
+    font-size: 12px;
+}
+
+.meta-table td {
+    padding: 2px 6px;
+}
+
+.client-box {
+    margin-top: 30px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    width: 60%;
+}
+
+.invoice-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 30px;
+}
+
+.invoice-table th {
+    border-bottom: 2px solid #333;
+    padding: 8px 5px;
+    text-align: left;
+    font-size: 12px;
+}
+
+.invoice-table td {
+    border-bottom: 1px solid #ddd;
+    padding: 6px 5px;
+}
+
+.right {
+    text-align: right;
+}
+
+.totals {
+    width: 40%;
+    margin-left: auto;
+    margin-top: 20px;
+    border-collapse: collapse;
+}
+
+.totals td {
+    padding: 6px;
+}
+
+.totals tr:last-child td {
+    font-weight: bold;
+    font-size: 14px;
+    border-top: 2px solid #333;
+}
+
+.footer {
+    margin-top: 40px;
+    font-size: 11px;
+    color: #555;
+}
+
+.small {
+    font-size: 10px;
+    color: #666;
+}
+</style>
+</head>
+
+<body>
+
+<!-- HEADER -->
+<table class="header-table">
+<tr>
+<td class="header-left">
+    <strong>{{ config.legal_name }}</strong><br>
+    {{ config.address }}<br>
+    {{ config.postal_code }} {{ config.city }}<br>
+    {{ config.country }}<br><br>
+    SIRET: {{ config.siret }}<br>
+    {{ invoice.vat_notice }}
+</td>
+
+<td class="header-right">
+    <h1>FACTURE</h1>
+    <table class="meta-table">
+        <tr>
+            <td><strong>N°</strong></td>
+            <td>{{ invoice.invoice_number }}</td>
+        </tr>
+        <tr>
+            <td><strong>Date</strong></td>
+            <td>{{ invoice.issue_date }}</td>
+        </tr>
+        <tr>
+            <td><strong>Échéance</strong></td>
+            <td>{{ invoice.due_date }}</td>
+        </tr>
+    </table>
+</td>
+</tr>
+</table>
+
+<!-- CLIENT -->
+<div class="client-box">
+<strong>Facturé à :</strong><br>
+{{ invoice.client.LegalName }}<br>
+{{ invoice.client.Address }}<br>
+{{ invoice.client.PostalCode }} {{ invoice.client.City }}<br>
+{{ invoice.client.Country }}
+</div>
+
+<!-- LINES -->
+<table class="invoice-table">
+<tr>
+    <th>Description</th>
+    <th class="right">Qté</th>
+    <th class="right">Prix unitaire</th>
+    <th class="right">Total</th>
+</tr>
+
+{% for line in invoice.lines %}
+<tr>
+    <td>{{ line.description }}</td>
+    <td class="right">{{ line.quantity }}</td>
+    <td class="right">{{ "%.2f"|format(line.unit_price) }} {{ invoice.currency }}</td>
+    <td class="right">{{ "%.2f"|format(line.total) }} {{ invoice.currency }}</td>
+</tr>
+{% endfor %}
+</table>
+
+<!-- TOTALS -->
+<table class="totals">
+<tr>
+    <td>Total HT</td>
+    <td class="right">{{ "%.2f"|format(invoice.total) }} {{ invoice.currency }}</td>
+</tr>
+<tr>
+    <td>TVA</td>
+    <td class="right">0.00 {{ invoice.currency }}</td>
+</tr>
+<tr>
+    <td>Total TTC</td>
+    <td class="right">{{ "%.2f"|format(invoice.total) }} {{ invoice.currency }}</td>
+</tr>
+</table>
+
+<!-- FOOTER -->
+<div class="footer">
+Paiement à {{ config.payment_terms_days }} jours.<br>
+Merci d’indiquer le numéro de facture lors du paiement.<br><br>
+
+<span class="small">
+Conformément à l’article L441-10 du Code de commerce, des pénalités de retard sont exigibles 
+en cas de paiement après la date d’échéance.
+</span>
+</div>
+
+</body>
+</html>

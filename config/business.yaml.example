@@ -1,0 +1,11 @@
+legal_name: "Your Name"
+address: "12 rue Exemple"
+postal_code: "75000"
+city: "Paris"
+country: "FR"
+siret: "12345678900012"
+vat_applicable: false
+vat_legal_notice: "TVA non applicable — article 293 B du CGI"
+payment_terms_days: 30
+currency: "EUR"
+invoice_only_completed_months: true
