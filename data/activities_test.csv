@@ -1,0 +1,8 @@
+Date,Time,Client,BillTo,Notes,Cost,Completed,Paid,InvoiceNumber
+2026-01-15,10:00,Alice,Alice's Biz,Activity 1,50,TRUE,FALSE,
+2026-01-16,11:00,Bob,Bob's Shop,Activity 2,40,TRUE,FALSE,
+2026-01-17,12:00,Charlie,Charlie Co,Activity 3,60,TRUE,FALSE,
+2026-01-18,13:00,Diana,Diana Inc,Activity 4,55,TRUE,FALSE,
+2026-01-19,14:00,Eve,Eve Ltd,Activity 5,45,TRUE,FALSE,
+2026-01-20,15:00,Frank,Frank LLC,Activity 6,50,TRUE,FALSE,
+2026-01-21,16:00,Grace,Grace OOO,Activity 7,65,TRUE,FALSE,

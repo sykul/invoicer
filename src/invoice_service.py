@@ -48,8 +48,38 @@ def is_activity_in_completed_month(activity_date_str: str, row_index: int) -> bo
     
     return True
 
+def validate_invoice_completeness(all_rows: List[Dict], billing_items: List[Dict]) -> Tuple[bool, List[str]]:
+    """
+    Safety check: Verify every activity that was included in an invoice
+    has been assigned an InvoiceNumber in all_rows.
+    
+    Returns:
+    - is_valid: True if all invoiced activities have InvoiceNumbers
+    - warnings: List of warning messages for activities without InvoiceNumbers
+    """
+    warnings = []
+    
+    for item in billing_items:
+        row_idx = item["source_row_index"]
+        
+        # Verify that row_idx is within bounds
+        if row_idx < 0 or row_idx >= len(all_rows):
+            warnings.append(f"Row index {row_idx} out of bounds (rows: 0-{len(all_rows) - 1})")
+            continue
+        
+        row = all_rows[row_idx]
+        invoice_num = row.get("InvoiceNumber", "").strip()
+        
+        if not invoice_num:
+            client = row.get("Client", "?")
+            notes = row.get("Notes", "?")[:30]
+            warnings.append(f"Row {row_idx} not updated: {client} - {notes}")
+    
+    return len(warnings) == 0, warnings
+
+
 # ============================================================================
-# HELPER FUNCTIONS
+# OLD: HELPER FUNCTIONS
 # ============================================================================
 
 def find_client_with_fuzzy_support(name: str) -> Optional[tuple]:
@@ -114,7 +144,7 @@ def normalize_row(row: Dict) -> Dict:
     return normalized
 
 
-def expand_row_to_billing_items(row: Dict, row_index: int) -> List[Dict]:
+def expand_row_to_billing_items(row: Dict, row_index: int, display_row_index: int = None) -> List[Dict]:
     """
     Expand a CSV row into billing items.
     
@@ -123,6 +153,11 @@ def expand_row_to_billing_items(row: Dict, row_index: int) -> List[Dict]:
     - Multiple BillTo values separated by ";"
     - Cost splitting evenly across clients
     - Extracts activity year and month from Date field
+    
+    Args:
+    - row: CSV row dict
+    - row_index: 0-based array index in all_rows (used for source_row_index)
+    - display_row_index: 1-based CSV line number for error messages (optional, defaults to row_index + 2)
     
     Returns: list of billing_item dicts
     {
@@ -138,6 +173,9 @@ def expand_row_to_billing_items(row: Dict, row_index: int) -> List[Dict]:
     
     Returns empty list if there's a validation error.
     """
+    if display_row_index is None:
+        display_row_index = row_index + 2  # Default: header + 1-indexed
+        
     clients = [c.strip() for c in row["Client"].split(";")]
     billtos = [b.strip() for b in row["BillTo"].split(";")]
     
@@ -148,13 +186,13 @@ def expand_row_to_billing_items(row: Dict, row_index: int) -> List[Dict]:
         activity_year = activity_datetime.year
         activity_month = activity_datetime.month
     except ValueError:
-        print(f"Row {row_index}: Invalid date format '{activity_date}'. Expected YYYY-MM-DD. Skipping row.")
+        print(f"Row {display_row_index}: Invalid date format '{activity_date}'. Expected YYYY-MM-DD. Skipping row.")
         return []
     
     # Validate: if multiple clients, BillTo count must match
     if len(clients) > 1 and len(billtos) > 1 and len(clients) != len(billtos):
         print(
-            f"Row {row_index}: Client count ({len(clients)}) doesn't match "
+            f"Row {display_row_index}: Client count ({len(clients)}) doesn't match "
             f"BillTo count ({len(billtos)}). Skipping row."
         )
         return []
@@ -178,7 +216,7 @@ def expand_row_to_billing_items(row: Dict, row_index: int) -> List[Dict]:
             "client": client_name,
             "description": description,
             "amount": per_client_cost,
-            "source_row_index": row_index,
+            "source_row_index": row_index,  # Use row_index (0-based array index)
             "activity_date": activity_date,
             "activity_year": activity_year,
             "activity_month": activity_month
@@ -226,8 +264,8 @@ def read_and_expand_activities() -> Tuple[List[Dict], List[Dict]]:
                 # Normalize the row
                 normalized = normalize_row(row)
                 
-                # Expand into billing items
-                items = expand_row_to_billing_items(normalized, idx + 2)  # +2: header + 1-indexed
+                # Expand into billing items (use idx for array indexing, not idx + 2)
+                items = expand_row_to_billing_items(normalized, idx, idx + 2)  # idx for array index, idx+2 for error messages
                 billing_items.extend(items)
     
     except FileNotFoundError as e:
@@ -436,6 +474,14 @@ def issue_invoice(billto_name: str) -> bool:
                 any_success = True
         
         if any_success:
+            # SAFETY CHECK: Verify all invoiced activities have InvoiceNumbers
+            is_valid, warnings = validate_invoice_completeness(all_rows, filtered_items)
+            
+            if not is_valid:
+                print(f"\n⚠️  WARNING: {len(warnings)} activity/ies were invoiced but NOT marked in CSV:")
+                for warning in warnings:
+                    print(f"   - {warning}")
+            
             # Update CSV
             update_csv_with_invoice_numbers(all_rows)
         
@@ -469,6 +515,20 @@ def issue_all() -> None:
             issue_invoice_for_billto_and_month(
                 billto_name, service_year, service_month, items, all_rows
             )
+        
+        # SAFETY CHECK: Verify all invoiced activities have InvoiceNumbers
+        is_valid, warnings = validate_invoice_completeness(all_rows, billing_items)
+        
+        if not is_valid:
+            print("\n⚠️  WARNING: Some invoiced activities don't have InvoiceNumbers:")
+            for warning in warnings:
+                print(f"   - {warning}")
+            print()
+            
+            # If this is a critical issue (many missing), consider raising an error
+            missing_count = len(warnings)
+            if missing_count > 0:
+                print(f"⚠️  {missing_count} activity/ies were invoiced but NOT marked in CSV")
         
         # Update CSV once at the end
         update_csv_with_invoice_numbers(all_rows)
